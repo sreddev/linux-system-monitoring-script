@@ -1,8 +1,5 @@
 #!/bin/bash
 # =====================================================================
-#   TEMA NR. 3: Crearea si executarea unui script in Linux
-#   Student: Sergiu Tarța
-# =====================================================================
 
 # Culori
 GREEN='\033[1;32m'
