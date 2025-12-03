@@ -1,0 +1,63 @@
+#!/bin/bash
+
+# 1. Configurare Variabile
+# ==========================================
+
+TIMESTAMP=$(date +"%Y-%m-%d_%H-%M-%S")
+OUTPUT_FILE="Raport_conectivitate_$TIMESTAMP.txt"
+
+# Functie de logging
+log_info() {
+    echo "--------------------------------------------------" >> "$OUTPUT_FILE"
+    echo ">>> $1" >> "$OUTPUT_FILE"
+    echo "--------------------------------------------------" >> "$OUTPUT_FILE"
+    echo "Processing: $1..."
+}
+
+echo "Start diagnosticare conectivitate retea..."
+echo "Raportul va fi salvat in: $OUTPUT_FILE"
+
+
+# 2. Colectare date
+# ==========================================
+
+# Header
+echo "Informatii conectivitate retea" > "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+echo "Data: $(date)" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+
+echo "Hostname: $(hostname)" >> "$OUTPUT_FILE"
+
+echo "" >> "$OUTPUT_FILE"
+
+echo "Informatii OS:
+$(cat /etc/os-release)" >> "$OUTPUT_FILE"
+
+echo "" >> "$OUTPUT_FILE"
+
+# 1. IP si Interfete (folosind ifconfig)
+
+log_info "1. Interfete de Retea si Adrese IP"
+echo "" >> "$OUTPUT_FILE"
+ifconfig >> "$OUTPUT_FILE"
+
+
+# 2. Rutare / Gateway
+
+log_info "2. Rute si Default Gateway"
+echo "" >> "$OUTPUT_FILE"
+ip route show >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+
+
+# 3. DNS (Configuratie locala)
+
+log_info "3. Configuratie DNS (/etc/resolv.conf)"
+echo "" >> "$OUTPUT_FILE"
+
+grep -v "^#" /etc/resolv.conf | grep . >> "$OUTPUT_FILE"
+
+echo "" >> "$OUTPUT_FILE"
+
+echo "Raport generat cu success: $(ls -l $OUTPUT_FILE | awk '{print $9}')"

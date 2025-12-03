@@ -1,0 +1,283 @@
+#!/bin/bash
+# =====================================================================
+#   TEMA NR. 3: Crearea si executarea unui script in Linux
+#   Student: Sergiu Tarța
+# =====================================================================
+
+# Culori
+GREEN='\033[1;32m'
+CYAN='\033[1;36m'
+RED='\033[1;31m'
+RESET='\033[0m'
+PIROS='\033[1;31m'
+SKYBLUE='\033[0;36m'
+GREEN='\033[0;32m'
+PLAIN='\033[0m'
+
+# Versiune
+VERSION=2.0
+
+
+# ----------------------Functia 0: Monitorizare CPU ----------------------
+f_cpu_monitor() {
+    echo ""
+	echo -e "${GREEN}------ Monitorizare CPU ------${PLAIN}"
+    echo ""
+	echo "Apăsați ENTER pentru a reveni la meniu."
+    echo ""
+    echo ""
+	# Initializare variabile
+    # MAX porneste de la 0, MIN se opreste la 100 (maximul teoretic)
+    MAX_CPU=0.0
+    MIN_CPU=100.0
+    
+    tput civis # Ascunde cursorul
+
+    while true; do
+        # 1. Se obtine utilizarea CPU curenta prin apelarea top in batch mode pentru 1 singura iteratie.   #top -bn1
+        CPU_USAGE=$(top -bn1 | grep "Cpu(s)" | awk '{print $2 + $4}')
+
+        # 2. Logica pentru MAX (Folosim bc pentru comparatie float pentru compararea corecta a zecimalelor)
+        # Daca CPU_USAGE > MAX_CPU, atunci se updateaza MAX_CPU
+        if (( $(echo "$CPU_USAGE > $MAX_CPU" | bc -l) )); then
+            MAX_CPU=$CPU_USAGE
+        fi
+
+        # 3. Logica pentru MIN
+        # Daca CPU_USAGE < MIN_CPU, atunci se updateaza MIN_CPU
+        if (( $(echo "$CPU_USAGE < $MIN_CPU" | bc -l) )); then
+            MIN_CPU=$CPU_USAGE
+        fi
+
+        # 4. Afisare complexa pe aceeasi linie
+        # \t insereaza un tab pentru aliniere
+        echo -ne "Actual: $CPU_USAGE% | Min: $MIN_CPU% | Max: $MAX_CPU%      \r"
+
+        # 5. Citire tasta ENTER (timeout 0.5 secunde)
+			read -rsN1 -t 0.5 tasta
+				if [[ "$tasta" == $'\n' ]]; then
+					echo "" 
+					echo "Monitorizare CPU oprita."
+					break
+				fi
+			done
+
+    tput cnorm # Reafiseaza cursorul
+    pauza
+}
+# ----------------------/Functia 0: Monitorizare CPU ----------------------
+
+
+# ----------------------Functia 1: Monitorizare RAM ----------------------
+f_ram_monitor() {
+    echo ""
+	echo -e "${GREEN}------ Monitorizare Memorie RAM (MB) ------${PLAIN}"
+    echo ""
+    echo "Apăsați ENTER pentru a reveni la meniu."
+    echo ""
+    echo ""	 
+    # Se obtine memoria totala pentru a initializa MIN-ul corect, daca MIN=0, memoria folosita nu pooate fi < 0.
+    MEM_TOTAL=$(free -m | awk '/Mem:/ {print $2}')
+    
+    MAX_MEM=0
+    MIN_MEM=$MEM_TOTAL # Initializare MIN cu valoarea maxima posibila (Total RAM)
+
+    tput civis # Ascunde cursorul pentru aspect pro
+
+    while true; do
+        # 1. Extrage memoria folosita curent (coloana 3 din free -m)
+        MEM_USED=$(free -m | awk '/Mem:/ {print $3}')
+
+        # 2. Logica MAX (folosim -gt pentru "greater than" la intregi)
+        if [ "$MEM_USED" -gt "$MAX_MEM" ]; then
+            MAX_MEM=$MEM_USED
+        fi
+
+        # 3. Logica MIN (folosim -lt pentru "less than")
+        if [ "$MEM_USED" -lt "$MIN_MEM" ]; then
+            MIN_MEM=$MEM_USED
+        fi
+
+        # 4. Afisare pe aceeasi linie (\r) a valorilor in MB 
+        echo -ne "Actual: ${MEM_USED} MB | Min: ${MIN_MEM} MB | Max: ${MAX_MEM} MB (din ${MEM_TOTAL} MB)    \r"
+
+        # 5. Citire tasta ENTER (timeout 0.5 secunde)
+			read -rsN1 -t 0.5 tasta
+				if [[ "$tasta" == $'\n' ]]; then
+					echo "" 
+					echo "Monitorizare RAM oprita."
+					break
+				fi
+			done
+
+    tput cnorm # Reafiseaza cursorul
+    pauza
+}
+# ----------------------/Functia 1: Monitorizare RAM ----------------------
+ 
+
+# ----------------------Functia 2: Monitorizare SWAP ----------------------
+ f_swap_monitor() {
+    echo ""
+    echo -e "${GREEN}------ Monitorizare Memorie SWAP (MB) ------${PLAIN}"
+    echo ""
+    echo "Apăsați ENTER pentru a reveni la meniu."
+    echo ""
+    echo ""
+
+    # Memorie totală SWAP (pentru inițializarea corectă a MIN-ului)
+    SWAP_TOTAL=$(free -m | awk '/Swap:/ {print $2}')
+
+    # Dacă sistemul nu are swap activ se afiseaza mesajul de mai jos si returneaza meniul scriptului.
+    if [ "$SWAP_TOTAL" -eq 0 ]; then
+        echo "Sistemul nu are swap activat. Monitorizarea nu este posibilă."
+        return
+    fi
+
+    MAX_SWAP=0
+    MIN_SWAP=$SWAP_TOTAL
+
+    tput civis
+
+    while true; do
+        
+        # Swap folosit curent
+        SWAP_USED=$(free -m | awk '/Swap:/ {print $3}')
+
+        # Max
+        if [ "$SWAP_USED" -gt "$MAX_SWAP" ]; then
+            MAX_SWAP=$SWAP_USED
+        fi
+
+        # Min
+        if [ "$SWAP_USED" -lt "$MIN_SWAP" ]; then
+            MIN_SWAP=$SWAP_USED
+        fi
+
+        echo -ne "Actual: ${SWAP_USED} MB | Min: ${MIN_SWAP} MB | Max: ${MAX_SWAP} MB (din ${SWAP_TOTAL} MB)    \r"
+
+        read -rsN1 -t 0.5 tasta
+        if [[ "$tasta" == $'\n' ]]; then
+            echo ""
+            echo "Monitorizare SWAP oprita."
+            break
+        fi
+    done
+
+    tput cnorm
+    pauza
+}
+
+# ----------------------/Functia 2: Monitorizare SWAP ----------------------
+
+
+# ----------------------Functia 3: Analiza director ----------------------
+f_analyze_directory() {
+    echo ""
+	echo -e "${GREEN}------ Analiză director ------${PLAIN}"
+    echo ""
+    read -p "Introduceți calea directorului de analizat: " dir
+
+    if [ -d "$dir" ]; then
+        echo "=== ANALIZĂ DIRECTOR ==="
+        echo "Număr de fișiere:"
+        find "$dir" -type f | wc -l
+
+        echo "Număr de directoare:"
+        find "$dir" -type d | wc -l
+
+        echo "Cele mai mari 5 fisiere sunt:"
+        du -ah "$dir" | sort -rh | head -5
+    else
+        echo "Directorul nu există!"
+    fi
+
+    echo ""
+    read -p "Apăsați ENTER pentru a reveni la meniu..."
+}
+# --------------------/Functia 3: Analiza director ----------------------
+ 
+ 
+# --------------------Functia 4: Raport de conectivitate ----------------------
+f_connectivity_report() {
+    echo ""
+	echo -e "${GREEN}------ Raport de conectivitate la rețea------${PLAIN}"
+    echo ""
+    # Se foloseste un fisier temporar pentru a captura output-ul scriptului extern
+    local tmp_file="/tmp/output_conectivitate.txt"
+
+    # Lansare script extern in background (&) si redirectare output catre tmp_file
+    ./02_raport_conectivitate > "$tmp_file" &
+    
+    # Retinem Process ID (PID) al scriptului lansat
+    local pid=$!
+
+    echo ""
+    echo -n "Asteptați generarea raportului de conectivitate la rețea"
+
+    # Cat timp procesul ruleaza (kill -0 verifica existenta procesului)
+    while kill -0 $pid 2> /dev/null; do
+        # --- Folosirea comenzii FOR pentru animatie ---
+        for i in 1 2 3; do
+            echo -n "."
+            sleep 0.5
+        done
+        # Se sterg punctele pentru a repeta animatia (backspace)
+        echo -ne "\b\b\b   \b\b\b"
+    done
+
+    echo "" # Rand nou dupa terminarea buclei
+
+    # Afisare ultima linie (cu numele raportului .txt) din scriptul extern ---
+    tail -n 1 "$tmp_file"
+    # Afisare mesaj final
+    read -p "Apăsați ENTER pentru a reveni la meniu..."
+}
+
+# ----------------------/Functia 4: Raport de conectivitate ----------------------
+
+
+# ----------------------Functia 5: Iesire din meniu si clear screen ----------------------
+f_exit() {
+echo ""
+    echo "La revedere!"  
+    sleep 2 # Asteptam 2 secunde pentru ca utilizatorul sa vada mesajul
+    clear   # Comanda CTRL+L
+    exit 0  # Opreste intreg scriptul
+}
+# ---------/Functia 4: Iesire din meniu si clear screen ------------
+
+
+# =========================== MENIU PRINCIPAL =============================
+# Bucla meniu
+while true; do
+    clear
+    echo -e "${SKYBLUE}Meniul aplicației de monitorizare server${PLAIN}"
+	echo "---------------------------------------------------------------------------------------------"
+	echo ""
+    echo "Alegeți una din opțiunile de mai jos:"
+	echo ""
+	echo -e "${GREEN}[0]${PLAIN} Monitorizare utilizare CPU"
+	echo -e "${GREEN}[1]${PLAIN} Monitorizare utilizare RAM"
+	echo -e "${GREEN}[2]${PLAIN} Monitorizare utilizare SWAP"
+	echo -e "${GREEN}[3]${PLAIN} Analiză director"
+	echo -e "${GREEN}[4]${PLAIN} Generare raport de conectivitate la rețea"
+	echo -e "${GREEN}[5]${PLAIN} Exit"
+    echo ""
+	echo "---------------------------------------------------------------------------------------------"
+	
+	echo ""
+	printf "${PIROS}Introduceți opțiunea dvs: ${RESET}"
+	read opt
+    # Procesare optiune meniu
+    case "$opt" in
+        0) f_cpu_monitor ;;
+        1) f_ram_monitor ;;
+        2) f_swap_monitor ;; 
+		3) f_analyze_directory ;;
+        4) f_connectivity_report ;;
+        5) f_exit ;;
+        *) echo -e "${PIROS} Opțiune invalidă. Alegeți o opțiune validă."; sleep 2 ;;
+    esac
+done
+# =========================== /MENIU PRINCIPAL =============================
